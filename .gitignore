@@ -3,6 +3,8 @@ notebook/*.ipynb
 logs/*.log
 features/*.feather
 data/input/*.csv
+data/input/*.xlsx
+data/input/*.zip
 data/input/*.pkl
 data/output/*.csv
 */__pycache__
