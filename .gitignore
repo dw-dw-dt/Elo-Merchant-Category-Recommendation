@@ -1,0 +1,8 @@
+.DS_Store
+notebook/*.ipynb
+logs/*.log
+features/*.feather
+data/input/*.csv
+data/input/*.pkl
+data/output/*.csv
+*/__pycache__
