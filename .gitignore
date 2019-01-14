@@ -8,3 +8,4 @@ data/input/*.zip
 data/input/*.pkl
 data/output/*.csv
 */__pycache__
+features/*.pkl
