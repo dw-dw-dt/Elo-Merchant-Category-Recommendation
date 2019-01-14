@@ -17,7 +17,6 @@ For Kaggle use
 │   ├── base.py
 │   └── create.py
 ├── logs
-│   ├── log_20190114194353.log
 │   └── logger.py
 ├── models
 │   └── lgbmClassifier.py
