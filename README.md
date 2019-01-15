@@ -27,11 +27,15 @@ For Kaggle use
     └── __init__.py
 ```
 
-初めは, 以下で train.csv, test.csv を feather に変換する.
+初めは, 以下で train.csv, test.csv を feather に変換する.(基本的に一度きり)
 ```
 python scripts/convert_to_feather.py
 ```
-そして, 特徴量の feather化 を以下で行う.
+そして, 特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.)
 ```
 python scripts/create_features.py
+```
+実行するのは, 以下のみ.
+```
+python run.py
 ```
