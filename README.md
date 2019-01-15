@@ -8,32 +8,30 @@ For Kaggle use
 │   └── default.json
 ├── data
 │   ├── input
-│   │   ├── sample_submission.csv
-│   │   ├── test.csv
-│   │   └── train.csv
+│   │   ├── *.csv
+│   │   └── *.feather
 │   └── output
 ├── features
-│   ├── __init__.py
-│   ├── base.py
-│   └── create.py
+│   └── *.feather
 ├── logs
 │   └── logger.py
 ├── models
 │   └── lgbmClassifier.py
 ├── notebook
-│   └── eda.ipynb
 ├── run.py
 ├── scripts
-│   └── convert_to_feather.py
+│   ├── convert_to_feather.py
+│   ├── create_features.py
+│   └── features_base.py
 └── utils
     └── __init__.py
 ```
 
-初めは, 以下で train.csv, test.csv をpklに変換する.
+初めは, 以下で train.csv, test.csv を feather に変換する.
 ```
-python scripts/convert_to_pickle.py
+python scripts/convert_to_feather.py
 ```
-そして, 特徴量の feather化を以下で行う.
+そして, 特徴量の feather化 を以下で行う.
 ```
 python scripts/create_features.py
 ```

@@ -14,20 +14,19 @@ def timer(name):
     print(f'[{name}] done in {time.time() - t0:.0f} s')
 
 
-# One-hot encoding for categorical columns with get_dummies
-def one_hot_encoder(df, nan_as_category = True):
+def one_hot_encoder(df, nan_as_category=True):
     original_columns = list(df.columns)
     categorical_columns = [col for col in df.columns if df[col].dtype == 'object']
-    df = pd.get_dummies(df, columns= categorical_columns, dummy_na= nan_as_category)
+    df = pd.get_dummies(df, columns=categorical_columns, dummy_na=nan_as_category)
     new_columns = [c for c in df.columns if c not in original_columns]
     return df, new_columns
 
 
 def load_datasets(feats):
-    #dfs = [pd.read_feather(f'features/{f}_train.feather') for f in feats]
+    # dfs = [pd.read_feather(f'features/{f}_train.feather') for f in feats]
     dfs = [feather.read_dataframe(f'features/{f}_train.feather') for f in feats]
     X_train = pd.concat(dfs, axis=1)
-    #dfs = [pd.read_feather(f'features/{f}_test.feather') for f in feats]
+    # dfs = [pd.read_feather(f'features/{f}_test.feather') for f in feats]
     dfs = [feather.read_dataframe(f'features/{f}_test.feather') for f in feats]
     X_test = pd.concat(dfs, axis=1)
     return X_train, X_test

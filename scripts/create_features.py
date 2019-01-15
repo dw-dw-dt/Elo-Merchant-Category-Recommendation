@@ -1,29 +1,34 @@
 import pandas as pd
 import numpy as np
 import datetime
+import feather
 import gc
-import os
-import sys
-cwd = os.getcwd()
-sys.path.append(cwd.replace('/scripts',''))
-from utils import load_pkl, save2pkl, one_hot_encoder
+from workalendar.america import Brazil
+from features_base import Feature, get_arguments, generate_features
 
 
-def train_test():
-    train_df = load_pkl('./data/input/train.pkl')
-    test_df = load_pkl('./data/input/test.pkl')
-    train_df.loc[:,'is_test'] = 0
-    test_df.loc[:,'is_test'] = 1
+# featureの格納場所はfeatures
+Feature.dir = 'features'
+# train, test はグローバルに宣言
+train = feather.read_dataframe('./data/input/train.feather')
+test = feather.read_dataframe('./data/input/train.feather')
+train.loc[:,'is_test'] = 0
+test.loc[:,'is_test'] = 1
+train['outliers'] = 0
+train.loc[train['target'] < -30, 'outliers'] = 1
+test['target'] = np.nan
+df = train.append(test)
+del train, test
+gc.collect()
+df = df.reset_index()
 
-    df = train_df.append(test_df)
-    # 処理を書く
 
-    return df
+class Activemonthclass(Feature):
+    def create_features(self):
+        self.df['first_active_month'] = pd.to_datetime(df['first_active_month'])
+
 
 if __name__ == '__main__':
-    df = train_test()
-    train = df[df.is_test == 0]
-    test = df[df.is_test == 1]
-    for col in df.columns:
-        save2pkl('./features/train_{}.pkl'.format(col), train.loc[:,col])
-        save2pkl('./features/test_{}.pkl'.format(col), test.loc[:,col])
+    args = get_arguments()
+    generate_features(globals(), args.force)
+
