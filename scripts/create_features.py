@@ -64,9 +64,7 @@ class Traintest_complex(Feature):
         for f in ['feature_1','feature_2','feature_3']:
             order_label = new_df.groupby([f])['outliers'].mean()
             new_df[f] = new_df[f].map(order_label)
-        #print(new_df.head(10))
         new_df = new_df.reset_index()
-        #print(new_df.head(10))
         for col in new_df.columns:
             if col not in _df.columns and col != 'card_id':
                 self.df[col] = new_df[col].astype(int)
