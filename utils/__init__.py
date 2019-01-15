@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import feather
 from contextlib import contextmanager
-import pickle
 
 
 @contextmanager
@@ -36,18 +35,6 @@ def load_target(target_name):
     train = pd.read_csv('./data/input/train.csv')
     y_train = train[target_name]
     return y_train
-
-
-def save2pkl(path, df):
-    f = open(path, 'wb')
-    pickle.dump(df, f)
-    f.close
-
-
-def load_pkl(path):
-    f = open(path, 'rb')
-    out = pickle.load(f)
-    return out
 
 
 def reduce_mem_usage(df, verbose=True):
