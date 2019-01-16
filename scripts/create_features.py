@@ -16,147 +16,187 @@ from features_base import Feature, get_arguments, generate_features
 Feature.dir = 'features'
 
 
-def load_df():
-    train = feather.read_dataframe('./data/input/train.feather')
-    test = feather.read_dataframe('./data/input/train.feather')
-    train.loc[:,'is_test'] = 0
-    test.loc[:,'is_test'] = 1
-    train['outliers'] = 0
-    train.loc[train['target'] < -30, 'outliers'] = 1
-    test['target'] = np.nan
-    df = train.append(test)
-    del train, test
-    gc.collect()
-    df = df.reset_index()
-    df = reduce_mem_usage(df)
-    return df
-
-
-def load_merchants():
-    merchants_df = feather.read_dataframe('./data/input/merchants.feather')
-    merchants_df = reduce_mem_usage(merchants_df)
-    return merchants_df
-
-
-class Traintest_simple(Feature):
+class Train_test(Feature):
     def create_features(self):
-        df = load_df()
-        self.df['first_active_month'] = pd.to_datetime(df['first_active_month'])
-        #self.df['month'] = self.df['first_active_month'].dt.month.fillna(0).astype(int).astype(object)
-        #self.df['year'] = self.df['first_active_month'].dt.year.fillna(0).astype(int).astype(object)
-        #self.df['dayofweek'] = self.df['first_active_month'].dt.dayofweek.fillna(0).astype(int).astype(object)
-        #self.df['weekofyear'] = self.df['first_active_month'].dt.weekofyear.fillna(0).astype(int).astype(object)
-        self.df['quarter'] = self.df['first_active_month'].dt.quarter
-        self.df['elapsed_time'] = (datetime.datetime.today() - self.df['first_active_month']).dt.days
-        self.df['days_feature1'] = self.df['elapsed_time'] * df['feature_1']
-        self.df['days_feature2'] = self.df['elapsed_time'] * df['feature_2']
-        self.df['days_feature3'] = self.df['elapsed_time'] * df['feature_3']
-        self.df['days_feature1_ratio'] = df['feature_1'] / self.df['elapsed_time']
-        self.df['days_feature2_ratio'] = df['feature_2'] / self.df['elapsed_time']
-        self.df['days_feature3_ratio'] = df['feature_3'] / self.df['elapsed_time']
+        # load csv
+        #train_df = pd.read_csv('../input/train.csv', index_col=['card_id'], nrows=num_rows)
+        train_df = feather.read_dataframe('./data/input/train.feather')
+        train_df = train_df.set_index('card_id')
+        #test_df = pd.read_csv('../input/test.csv', index_col=['card_id'], nrows=num_rows)
+        test_df = feather.read_dataframe('./data/input/test.feather')
+        test_df = test_df.set_index('card_id')
 
+        print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
 
-class Traintest_complex(Feature):
-    def create_features(self):
-        df = load_df()
-        _df = df.set_index('card_id')
-        new_df, new_cols = one_hot_encoder(_df, nan_as_category=False)
+        # outlier
+        train_df['outliers'] = 0
+        train_df.loc[train_df['target'] < -30, 'outliers'] = 1
+
+        # set target as nan
+        test_df['target'] = np.nan
+
+        # merge
+        df = train_df.append(test_df)
+
+        del train_df, test_df
+        gc.collect()
+
+        # datetimeへ変換
+        df['first_active_month'] = pd.to_datetime(df['first_active_month'])
+
+        # datetime features
+    #    df['month'] = df['first_active_month'].dt.month.fillna(0).astype(int).astype(object)
+    #    df['year'] = df['first_active_month'].dt.year.fillna(0).astype(int).astype(object)
+    #    df['dayofweek'] = df['first_active_month'].dt.dayofweek.fillna(0).astype(int).astype(object)
+    #    df['weekofyear'] = df['first_active_month'].dt.weekofyear.fillna(0).astype(int).astype(object)
+        df['quarter'] = df['first_active_month'].dt.quarter
+    #    df['month_year'] = df['month'].astype(str)+'_'+df['year'].astype(str)
+        df['elapsed_time'] = (datetime.datetime.today() - df['first_active_month']).dt.days
+
+        df['days_feature1'] = df['elapsed_time'] * df['feature_1']
+        df['days_feature2'] = df['elapsed_time'] * df['feature_2']
+        df['days_feature3'] = df['elapsed_time'] * df['feature_3']
+
+        df['days_feature1_ratio'] = df['feature_1'] / df['elapsed_time']
+        df['days_feature2_ratio'] = df['feature_2'] / df['elapsed_time']
+        df['days_feature3_ratio'] = df['feature_3'] / df['elapsed_time']
+
+        # one hot encoding
+        df, cols = one_hot_encoder(df, nan_as_category=False)
+
         for f in ['feature_1','feature_2','feature_3']:
-            order_label = new_df.groupby([f])['outliers'].mean()
-            new_df[f] = new_df[f].map(order_label)
-        new_df = new_df.reset_index()
-        for col in new_df.columns:
-            if col not in _df.columns and col != 'card_id':
-                self.df[col] = new_df[col].astype(int)
-        self.df['feature_sum'] = new_df['feature_1'].astype(int) + new_df['feature_2'].astype(int) + new_df['feature_3'].astype(int)
-        self.df['feature_mean'] = self.df['feature_sum'].astype(float)/3
-        self.df['feature_max'] = new_df[['feature_1', 'feature_2', 'feature_3']].max(axis=1).astype(int)
-        self.df['feature_min'] = new_df[['feature_1', 'feature_2', 'feature_3']].min(axis=1).astype(int)
-        self.df['feature_var'] = new_df[['feature_1', 'feature_2', 'feature_3']].std(axis=1).astype(int)
-        self.df['feature_skew'] = new_df[['feature_1', 'feature_2', 'feature_3']].skew(axis=1).astype(int)
+            order_label = df.groupby([f])['outliers'].mean()
+            df[f] = df[f].map(order_label)
+
+        df['feature_sum'] = df['feature_1'] + df['feature_2'] + df['feature_3']
+        df['feature_mean'] = df['feature_sum']/3
+        df['feature_max'] = df[['feature_1', 'feature_2', 'feature_3']].max(axis=1)
+        df['feature_min'] = df[['feature_1', 'feature_2', 'feature_3']].min(axis=1)
+        df['feature_var'] = df[['feature_1', 'feature_2', 'feature_3']].std(axis=1)
+        df['feature_skew'] = df[['feature_1', 'feature_2', 'feature_3']].skew(axis=1)
+
+        df = df.reset_index()
+        self.df = df
 
 
-class Marchants_simple(Feature):
+class Historical_transaction(Feature):
     def create_features(self):
-        merchants_df = load_merchants()
-        self.df['category_1'] = merchants_df['category_1'].map({'Y': 1, 'N': 0}).astype(int)
-        self.df['category_4'] = merchants_df['category_4'].map({'Y': 1, 'N': 0}).astype(int)
-        self.df['avg_numerical'] = merchants_df[['numerical_1','numerical_2']].mean(axis=1).astype(float) # 型でエラーが出たのでmapでfloatに変換
-        self.df['avg_sales'] = merchants_df[['avg_sales_lag3','avg_sales_lag6','avg_sales_lag12']].mean(axis=1).astype(float)
-        self.df['avg_purchases'] = merchants_df[['avg_purchases_lag3','avg_purchases_lag6','avg_purchases_lag12']].mean(axis=1).astype(float)
-        self.df['avg_active_months'] = merchants_df[['active_months_lag3','active_months_lag6','active_months_lag12']].mean(axis=1).astype(float)
-        self.df['max_sales'] = merchants_df[['avg_sales_lag3','avg_sales_lag6','avg_sales_lag12']].max(axis=1).astype(float)
-        self.df['max_purchases'] = merchants_df[['avg_purchases_lag3','avg_purchases_lag6','avg_purchases_lag12']].max(axis=1).astype(float)
-        self.df['max_active_months'] = merchants_df[['active_months_lag3','active_months_lag6','active_months_lag12']].max(axis=1).astype(int)
-        self.df['min_sales'] = merchants_df[['avg_sales_lag3','avg_sales_lag6','avg_sales_lag12']].min(axis=1).astype(float)
-        self.df['min_purchases'] = merchants_df[['avg_purchases_lag3','avg_purchases_lag6','avg_purchases_lag12']].min(axis=1).astype(float)
-        self.df['min_active_months'] = merchants_df[['active_months_lag3','active_months_lag6','active_months_lag12']].min(axis=1).astype(int)
-        self.df['sum_category'] = merchants_df[['category_1','category_2','category_4']].sum(axis=1).astype(float)
+        #hist_df = pd.read_csv('../input/historical_transactions.csv', nrows=num_rows)
+        hist_df = feather.read_dataframe('./data/input/historical_transactions.feather')
+
         # fillna
-        self.df['category_2'] = merchants_df['category_2'].fillna(-1).astype(int).astype(object)
+        hist_df['category_2'].fillna(1.0,inplace=True)
+        hist_df['category_3'].fillna('A',inplace=True)
+        hist_df['merchant_id'].fillna('M_ID_00a6ca8a8a',inplace=True)
+        hist_df['installments'].replace(-1, np.nan,inplace=True)
+        hist_df['installments'].replace(999, np.nan,inplace=True)
 
-"""
-class Marchants_complex(Feature):
-    def create_features(self):
-        new_merchants_df, new_cols = one_hot_encoder(merchants_df, nan_as_category=False)
-        # unique columns
-        col_unique =['merchant_group_id', 'merchant_category_id', 'subsector_id',
-                    'city_id', 'state_id']
+        # Y/Nのカラムを1-0へ変換
+        hist_df['authorized_flag'] = hist_df['authorized_flag'].map({'Y': 1, 'N': 0}).astype(int)
+        hist_df['category_1'] = hist_df['category_1'].map({'Y': 1, 'N': 0}).astype(int)
+        hist_df['category_3'] = hist_df['category_3'].map({'A':0, 'B':1, 'C':2})
 
-        # aggregation
+        # datetime features
+        hist_df['purchase_date'] = pd.to_datetime(hist_df['purchase_date'])
+    #    hist_df['year'] = hist_df['purchase_date'].dt.year
+        hist_df['month'] = hist_df['purchase_date'].dt.month
+        hist_df['day'] = hist_df['purchase_date'].dt.day
+        hist_df['hour'] = hist_df['purchase_date'].dt.hour
+        hist_df['weekofyear'] = hist_df['purchase_date'].dt.weekofyear
+        hist_df['weekday'] = hist_df['purchase_date'].dt.weekday
+        hist_df['weekend'] = (hist_df['purchase_date'].dt.weekday >=5).astype(int)
+
+        # additional features
+        hist_df['price'] = hist_df['purchase_amount'] / hist_df['installments']
+
+        #ブラジルの休日
+        cal = Brazil()
+        hist_df['is_holiday'] = hist_df['purchase_date'].dt.date.apply(cal.is_holiday).astype(int)
+
+        # 購入日からイベント日までの経過日数
+        #Christmas : December 25 2017
+        hist_df['Christmas_Day_2017']=(pd.to_datetime('2017-12-25')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+        #Mothers Day: May 14 2017
+        hist_df['Mothers_Day_2017']=(pd.to_datetime('2017-06-04')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+        #fathers day: August 13 2017
+        hist_df['fathers_day_2017']=(pd.to_datetime('2017-08-13')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+        #Childrens day: October 12 2017
+        hist_df['Children_day_2017']=(pd.to_datetime('2017-10-12')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+        #Valentine's Day : 12th June, 2017
+        hist_df['Valentine_Day_2017']=(pd.to_datetime('2017-06-12')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+        #Black Friday : 24th November 2017
+        hist_df['Black_Friday_2017']=(pd.to_datetime('2017-11-24') - hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+
+        #2018
+        #Mothers Day: May 13 2018
+        hist_df['Mothers_Day_2018']=(pd.to_datetime('2018-05-13')-hist_df['purchase_date']).dt.days.apply(lambda x: x if x > 0 and x < 100 else 0)
+
+        hist_df['month_diff'] = ((datetime.datetime.today() - hist_df['purchase_date']).dt.days)//30
+        hist_df['month_diff'] += hist_df['month_lag']
+
+        # additional features
+        hist_df['duration'] = hist_df['purchase_amount']*hist_df['month_diff']
+        hist_df['amount_month_ratio'] = hist_df['purchase_amount']/hist_df['month_diff']
+
+        # memory usage削減
+        hist_df = reduce_mem_usage(hist_df)
+
+        col_unique =['subsector_id', 'merchant_id', 'merchant_category_id']
+        col_seas = ['month', 'hour', 'weekofyear', 'day']
+
         aggs = {}
         for col in col_unique:
             aggs[col] = ['nunique']
 
-        aggs['numerical_1'] = ['mean','max','min','std','var']
-        aggs['numerical_2'] = ['mean','max','min','std','var']
-        aggs['avg_sales_lag3'] = ['mean','max','min','std','var']
-        aggs['avg_sales_lag6'] = ['mean','max','min','std','var']
-        aggs['avg_sales_lag12'] = ['mean','max','min','std','var']
-        aggs['avg_purchases_lag3'] = ['mean','max','min','std','var']
-        aggs['avg_purchases_lag6'] = ['mean','max','min','std','var']
-        aggs['avg_purchases_lag12'] = ['mean','max','min','std','var']
-        aggs['active_months_lag3'] = ['mean','max','min','std','var']
-        aggs['active_months_lag6'] = ['mean','max','min','std','var']
-        aggs['active_months_lag12'] = ['mean','max','min','std','var']
-        aggs['category_1'] = ['mean']
-        aggs['category_4'] = ['mean']
-        aggs['most_recent_sales_range_A'] = ['mean']
-        aggs['most_recent_sales_range_B'] = ['mean']
-        aggs['most_recent_sales_range_C'] = ['mean']
-        aggs['most_recent_sales_range_D'] = ['mean']
-        aggs['most_recent_sales_range_E'] = ['mean']
-        aggs['most_recent_purchases_range_A'] = ['mean']
-        aggs['most_recent_purchases_range_B'] = ['mean']
-        aggs['most_recent_purchases_range_C'] = ['mean']
-        aggs['most_recent_purchases_range_D'] = ['mean']
-        aggs['most_recent_purchases_range_E'] = ['mean']
-        aggs['category_2_-1'] = ['mean']
-        aggs['category_2_1'] = ['mean']
-        aggs['category_2_2'] = ['mean']
-        aggs['category_2_3'] = ['mean']
-        aggs['category_2_4'] = ['mean']
-        aggs['category_2_5'] = ['mean']
-        aggs['avg_numerical'] = ['mean','max','min','std','var']
-        aggs['avg_sales'] = ['mean','max','min','std','var']
-        aggs['avg_purchases'] = ['mean','max','min','std','var']
-        aggs['avg_active_months'] = ['mean','max','min','std','var']
-        aggs['max_sales'] = ['mean','max','min','std','var']
-        aggs['max_purchases'] = ['mean','max','min','std','var']
-        aggs['max_active_months'] = ['mean','max','min','std','var']
-        aggs['min_sales'] = ['mean','max','min','std','var']
-        aggs['min_purchases'] = ['mean','max','min','std','var']
-        aggs['min_active_months'] = ['mean','max','min','std','var']
-        aggs['sum_category'] = ['mean']
+        for col in col_seas:
+            aggs[col] = ['nunique', 'mean', 'min', 'max']
 
-        new_merchants_df = new_merchants_df.reset_index().groupby('merchant_id').agg(aggs)
+        aggs['purchase_amount'] = ['sum','max','min','mean','var','skew']
+        aggs['installments'] = ['sum','max','mean','var','skew']
+        aggs['purchase_date'] = ['max','min']
+        aggs['month_lag'] = ['max','min','mean','var','skew']
+        aggs['month_diff'] = ['max','min','mean','var','skew']
+        aggs['authorized_flag'] = ['mean']
+        aggs['weekend'] = ['mean', 'max']
+        aggs['weekday'] = ['nunique', 'mean'] # overwrite
+        aggs['category_1'] = ['mean']
+        aggs['category_2'] = ['mean']
+        aggs['category_3'] = ['mean']
+        aggs['card_id'] = ['size','count']
+        aggs['is_holiday'] = ['mean']
+        aggs['price'] = ['sum','mean','max','min','var','skew']
+        aggs['Christmas_Day_2017'] = ['mean']
+        aggs['Mothers_Day_2017'] = ['mean']
+        aggs['fathers_day_2017'] = ['mean']
+        aggs['Children_day_2017'] = ['mean']
+        aggs['Valentine_Day_2017'] = ['mean']
+        aggs['Black_Friday_2017'] = ['mean']
+        aggs['Mothers_Day_2018'] = ['mean']
+        aggs['duration']=['mean','min','max','var','skew']
+        aggs['amount_month_ratio']=['mean','min','max','var','skew']
+
+        for col in ['category_2','category_3']:
+            hist_df[col+'_mean'] = hist_df.groupby([col])['purchase_amount'].transform('mean')
+            hist_df[col+'_min'] = hist_df.groupby([col])['purchase_amount'].transform('min')
+            hist_df[col+'_max'] = hist_df.groupby([col])['purchase_amount'].transform('max')
+            hist_df[col+'_sum'] = hist_df.groupby([col])['purchase_amount'].transform('sum')
+            aggs[col+'_mean'] = ['mean']
+
+        hist_df = hist_df.reset_index().groupby('card_id').agg(aggs)
 
         # カラム名の変更
-        new_merchants_df.columns = pd.Index([e[0] + "_" + e[1] for e in new_merchants_df.columns.tolist()])
-        new_merchants_df.columns = ['mer_'+ c for c in new_merchants_df.columns]
-        for col in new_merchants_df.columns:
-            self.df[col] = new_merchants_df[col]
-"""
+        hist_df.columns = pd.Index([e[0] + "_" + e[1] for e in hist_df.columns.tolist()])
+        hist_df.columns = ['hist_'+ c for c in hist_df.columns]
+
+        hist_df['hist_purchase_date_diff'] = (hist_df['hist_purchase_date_max']-hist_df['hist_purchase_date_min']).dt.days
+        hist_df['hist_purchase_date_average'] = hist_df['hist_purchase_date_diff']/hist_df['hist_card_id_size']
+        hist_df['hist_purchase_date_uptonow'] = (datetime.datetime.today()-hist_df['hist_purchase_date_max']).dt.days
+        hist_df['hist_purchase_date_uptomin'] = (datetime.datetime.today()-hist_df['hist_purchase_date_min']).dt.days
+
+        hist_df = hist_df.reset_index()
+
+        self.df = hist_df
+
 
 if __name__ == '__main__':
     args = get_arguments()
