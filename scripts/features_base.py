@@ -20,7 +20,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def get_features(namespace):
+def get_features(namespace): # 特徴量クラスのみを抽出する関数
     for k, v in namespace.items():
         if inspect.isclass(v) and issubclass(v, Feature) \
                 and not inspect.isabstract(v):
@@ -79,7 +79,7 @@ class Feature(metaclass=ABCMeta):
 
 
     def load(self):
-        self.df = feather.read_dataframe(str(self.df_path))
         #self.train = pd.read_feather(str(self.train_path))
         #self.test = pd.read_feather(str(self.test_path))
+        self.df = feather.read_dataframe(str(self.df_path))
 
