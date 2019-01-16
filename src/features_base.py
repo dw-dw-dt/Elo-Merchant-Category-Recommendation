@@ -5,10 +5,6 @@ import pandas as pd
 import re
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-import os
-import sys
-cwd = os.getcwd()
-sys.path.append(cwd.replace('/scripts',''))
 from utils import timer
 
 

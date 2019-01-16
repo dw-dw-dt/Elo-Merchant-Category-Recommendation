@@ -1,14 +1,6 @@
 import pandas as pd
-import os
-import sys
-cwd = os.getcwd()
-sys.path.append(cwd.replace('/scripts',''))
 
-################
-## data/input の train.csv, test.csv をtrain.pkl, test.pkl に変換するスクリプト
-################
 
-## data/input 内のcsvファイルを全部取ってくるようにしてもいいかも!?
 target = [
     'train',
     'test',
