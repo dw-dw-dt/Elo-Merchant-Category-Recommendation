@@ -31,7 +31,7 @@ For Kaggle use
 ```
 python scripts/convert_to_feather.py
 ```
-そして, 特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.)
+そして, 特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.あるいは別のクラスを定義して実行)
 ```
 python scripts/create_features.py
 ```
