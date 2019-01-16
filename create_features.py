@@ -7,7 +7,7 @@ from workalendar.america import Brazil
 import os
 import sys
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/scripts',''))
+sys.path.append(cwd+'/src/')
 from utils import one_hot_encoder
 from features_base import Feature, get_arguments, generate_features
 
@@ -328,6 +328,7 @@ def load_all():
     new_merchant_df =feather.read_dataframe('./features/new_merchant_transactions_df.feather')
     df = pd.merge(df, new_merchant_df, on='card_id', how='outer')
     return df
+
 
 class Additional_features(Feature):
     def create_features(self):

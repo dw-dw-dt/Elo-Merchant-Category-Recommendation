@@ -6,6 +6,8 @@ For Kaggle use
 ├── README.md
 ├── configs
 │   └── default.json
+├── convert_to_feather.py
+├── create_features.py
 ├── data
 │   ├── input
 │   │   ├── *.csv
@@ -19,9 +21,7 @@ For Kaggle use
 │   └── lgbmClassifier.py
 ├── notebook
 ├── run.py
-├── scripts
-│   ├── convert_to_feather.py
-│   ├── create_features.py
+├── src
 │   └── features_base.py
 └── utils
     └── __init__.py
@@ -29,13 +29,13 @@ For Kaggle use
 
 初めは, 以下で train.csv, test.csv を feather に変換する.(基本的に一度きり)
 ```
-python scripts/convert_to_feather.py
+python convert_to_feather.py
 ```
 そして, 特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.あるいは別のクラスを定義して実行)
 ```
-python scripts/create_features.py
+python create_features.py
 ```
-実行するのは, 以下のみ.
+通常は実行するのは, 以下のみ.
 ```
 python run.py
 ```
