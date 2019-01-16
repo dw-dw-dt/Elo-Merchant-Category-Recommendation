@@ -8,7 +8,7 @@ import os
 import sys
 cwd = os.getcwd()
 sys.path.append(cwd.replace('/scripts',''))
-from utils import reduce_mem_usage, one_hot_encoder
+from utils import one_hot_encoder
 from features_base import Feature, get_arguments, generate_features
 
 
@@ -138,8 +138,8 @@ class Historical_transaction(Feature):
         hist_df['duration'] = hist_df['purchase_amount']*hist_df['month_diff']
         hist_df['amount_month_ratio'] = hist_df['purchase_amount']/hist_df['month_diff']
 
-        # memory usage削減
-        hist_df = reduce_mem_usage(hist_df)
+        # memory usage削減 <この部分で謎のエラーが出るのでコメントアウト pyarrow.lib.ArrowNotImplementedError: halffloat
+        #hist_df = reduce_mem_usage(hist_df)
 
         col_unique =['subsector_id', 'merchant_id', 'merchant_category_id']
         col_seas = ['month', 'hour', 'weekofyear', 'day']
