@@ -2,7 +2,8 @@ import lightgbm as lgb
 import logging
 import numpy as np
 
-from logs.logger import log_evaluation
+#from logs.logger import log_evaluation
+from utils import log_evaluation
 
 
 def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, lgbm_params):

@@ -4,29 +4,28 @@ import logging
 from sklearn.model_selection import KFold
 import argparse
 import json
-#from logs.logger import log_best
-from models.lgbmClassifier import train_and_predict
 import subprocess
 import os
 import sys
 cwd = os.getcwd()
-sys.path.append(cwd)
-
+sys.path.append(cwd.replace('/user01',''))
+from models.lgbmClassifier import train_and_predict
 from utils import log_best, load_datasets, load_target
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', default='./configs/default.json')
+parser.add_argument('--config', default='../configs/default.json')
 options = parser.parse_args()
 config = json.load(open(options.config))
 
 
 now = datetime.datetime.now()
 logging.basicConfig(
-    filename='./logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now), level=logging.DEBUG
+    filename='../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now), level=logging.DEBUG
 )
-logging.debug('./logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now))
+logging.debug('../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now))
 
+quit()
 feats = config['features']
 logging.debug(feats)
 
@@ -76,7 +75,7 @@ logging.debug(score)
 
 # submitファイルの作成
 ID_name = config['ID_name']
-sub = pd.DataFrame(pd.read_csv('./data/input/test.csv')[ID_name])
+sub = pd.DataFrame(pd.read_csv('../data/input/test.csv')[ID_name])
 
 for i in range(len(y_preds) - 1):
     y_preds[0] += y_preds[i + 1]
@@ -84,6 +83,6 @@ for i in range(len(y_preds) - 1):
 sub[target_name] = [1 if y > 1 else 0 for y in y_preds[0]]
 
 sub.to_csv(
-    './data/output/sub_{0:%Y-%m-%d-%H-%M-%S}_{1}.csv'.format(now, score),
+    '../data/output/sub_{0:%Y-%m-%d-%H-%M-%S}_{1}.csv'.format(now, score),
     index=False
 )

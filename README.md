@@ -5,30 +5,24 @@
 ├── configs
 │   └── default.json
 ├── convert_to_feather.py
-├── create_features.py
 ├── data
 │   ├── input
 │   │   ├── *.csv
 │   │   └── *.feather
 │   └── output
-│
-├── features:特徴量のfeatherファイルの置き場
-│   └── *.feather
-│
+├── features
+│   └── *.feather
 ├── logs
-│   └── logger.py
-│
+│   └── *.log
 ├── models
 │   └── lgbmClassifier.py
-│
 ├── notebook
-│   └── *.ipynb
-├── run.py
-│
-├── src:複雑なクラスなどを定義したpyファイルの置き場
-│   └── features_base.py
-│
-└── utils:便利関数の置き場
+├── src
+│   └── features_base.py
+├── user01
+│   ├── create_features.py
+│   └── run.py
+└── utils
     └── __init__.py
 ```
 
@@ -37,11 +31,12 @@
 ```
 python convert_to_feather.py
 ```
-そして, 特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.あるいは別のクラスを定義して実行)
+### ユーザーごとの作業は基本 ./user で行う
+特徴量の feather化 を以下で行う.(特徴量に変更があった時は, 該当する特徴量ファイル（/features/*.feather）を削除の上で, 再実行.あるいは別のクラスを定義して実行)
 ```
 python create_features.py
 ```
-通常は実行するのは, 以下のみ.
+実行するのは, 以下のみ.
 ```
 python run.py
 ```

@@ -7,23 +7,24 @@ from workalendar.america import Brazil
 import os
 import sys
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/scripts','/src/'))
+sys.path.append(cwd.replace('/user01',''))
 from utils import one_hot_encoder
+sys.path.append(cwd.replace('/user01','/src'))
 from features_base import Feature, get_arguments, generate_features
 
 
 # featureの格納場所はfeatures
-Feature.dir = 'features'
+Feature.dir = '../features'
 
 
 class Train_test(Feature):
     def create_features(self):
         # load csv
         #train_df = pd.read_csv('../input/train.csv', index_col=['card_id'], nrows=num_rows)
-        train_df = feather.read_dataframe('./data/input/train.feather')
+        train_df = feather.read_dataframe('../data/input/train.feather')
         train_df = train_df.set_index('card_id')
         #test_df = pd.read_csv('../input/test.csv', index_col=['card_id'], nrows=num_rows)
-        test_df = feather.read_dataframe('./data/input/test.feather')
+        test_df = feather.read_dataframe('../data/input/test.feather')
         test_df = test_df.set_index('card_id')
 
         print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
@@ -82,7 +83,7 @@ class Train_test(Feature):
 class Historical_transactions(Feature):
     def create_features(self):
         #hist_df = pd.read_csv('../input/historical_transactions.csv', nrows=num_rows)
-        hist_df = feather.read_dataframe('./data/input/historical_transactions.feather')
+        hist_df = feather.read_dataframe('../data/input/historical_transactions.feather')
 
         # fillna
         hist_df['category_2'].fillna(1.0,inplace=True)
@@ -202,7 +203,7 @@ class New_merchant_transactions(Feature):
     def create_features(self):
         # load csv
         #new_merchant_df = pd.read_csv('../input/new_merchant_transactions.csv', nrows=num_rows)
-        new_merchant_df = feather.read_dataframe('./data/input/new_merchant_transactions.feather')
+        new_merchant_df = feather.read_dataframe('../data/input/new_merchant_transactions.feather')
 
         # fillna
         new_merchant_df['category_2'].fillna(1.0,inplace=True)
@@ -322,7 +323,7 @@ class New_merchant_transactions(Feature):
 
 
 def load_all():
-    df = feather.read_dataframe('./features/train_test_df.feather')
+    df = feather.read_dataframe('../features/train_test_df.feather')
     hist_df = feather.read_dataframe('./features/historical_transactions_df.feather')
     df = pd.merge(df, hist_df, on='card_id', how='outer')
     new_merchant_df =feather.read_dataframe('./features/new_merchant_transactions_df.feather')
