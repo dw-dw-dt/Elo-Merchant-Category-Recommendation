@@ -5,8 +5,6 @@ features/*.feather
 data/input/*.csv
 data/input/*.xlsx
 data/input/*.zip
-data/input/*.pkl
 data/input/*.feather
 data/output/*.csv
 */__pycache__
-features/*.pkl

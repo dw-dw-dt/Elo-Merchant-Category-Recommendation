@@ -3,6 +3,10 @@ import logging
 import numpy as np
 
 #from logs.logger import log_evaluation
+import os
+import sys
+cwd = os.getcwd()
+sys.path.append(cwd.replace('/user01',''))
 from utils import log_evaluation
 
 
