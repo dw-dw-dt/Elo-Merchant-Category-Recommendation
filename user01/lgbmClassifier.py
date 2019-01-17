@@ -1,8 +1,6 @@
 import lightgbm as lgb
 import logging
 import numpy as np
-
-#from logs.logger import log_evaluation
 import os
 import sys
 cwd = os.getcwd()

@@ -9,7 +9,6 @@ import os
 import sys
 cwd = os.getcwd()
 sys.path.append(cwd.replace('/user01',''))
-#from models.lgbmClassifier import train_and_predict
 from lgbmClassifier import train_and_predict
 from utils import log_best, load_datasets, load_target
 
