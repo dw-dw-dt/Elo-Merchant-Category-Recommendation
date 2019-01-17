@@ -11,18 +11,25 @@
 │   │   ├── *.csv
 │   │   └── *.feather
 │   └── output
-├── features
-│   └── *.feather
+│
+├── features:特徴量のfeatherファイルの置き場
+│   └── *.feather
+│
 ├── logs
 │   └── logger.py
+│
 ├── models
 │   └── lgbmClassifier.py
+│
 ├── notebook
+│   └── *.ipynb
 ├── run.py
-├── src
-│   └── features_base.py
+│
+├── src:複雑なクラスなどを定義したpyファイルの置き場
+│   └── features_base.py
+│
 └── utils
-    └── __init__.py
+    └── __init__.py:便利関数の置き場
 ```
 
 # 使い方
