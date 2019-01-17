@@ -9,12 +9,13 @@ import os
 import sys
 cwd = os.getcwd()
 sys.path.append(cwd.replace('/user01',''))
-from models.lgbmClassifier import train_and_predict
+#from models.lgbmClassifier import train_and_predict
+from lgbmClassifier import train_and_predict
 from utils import log_best, load_datasets, load_target
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', default='../configs/default.json')
+parser.add_argument('--config', default='model_params.json')
 options = parser.parse_args()
 config = json.load(open(options.config))
 
@@ -60,6 +61,9 @@ for train_index, valid_index in kf.split(X_train_all):
 
     # スコア
     log_best(model, config['loss'])
+
+## TODO
+## model, とparams をmodelフォルダに保存するべき
 
 # CVスコア
 scores = [
