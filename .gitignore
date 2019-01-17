@@ -8,3 +8,5 @@ data/input/*.zip
 data/input/*.feather
 data/output/*.csv
 */__pycache__
+models/*.json
+models/*.pkl

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import feather
 from contextlib import contextmanager
+import pickle
 import logging
 from lightgbm.callback import _format_eval_result
 
@@ -24,6 +25,7 @@ def log_evaluation(logger, period=1, show_stdv=True, level=logging.DEBUG):
     _callback.order = 10
     return _callback
 
+
 @contextmanager
 def timer(name):
     t0 = time.time()
@@ -33,11 +35,13 @@ def timer(name):
 
 
 def one_hot_encoder(df, nan_as_category=True):
-    original_columns = list(df.columns)
-    categorical_columns = [col for col in df.columns if df[col].dtype == 'object']
-    df = pd.get_dummies(df, columns=categorical_columns, dummy_na=nan_as_category)
-    new_columns = [c for c in df.columns if c not in original_columns]
-    return df, new_columns
+    original_cols = list(df.columns)
+    categorical_cols = [col for col in df.columns if df[col].dtype == 'object']
+    df = pd.get_dummies(df,
+                        columns=categorical_cols,
+                        dummy_na=nan_as_category)
+    new_cols = [c for c in df.columns if c not in original_cols]
+    return df, new_cols
 
 
 def load_datasets(feats):
@@ -54,6 +58,18 @@ def load_target(target_name):
     train = pd.read_csv('./data/input/train.csv')
     y_train = train[target_name]
     return y_train
+
+
+def save2pkl(path, object):
+    f = open(path, 'wb')
+    pickle.dump(object, f)
+    f.close
+
+
+def loadpkl(path):
+    f = open(path, 'rb')
+    out = pickle.load(f)
+    return out
 
 
 def reduce_mem_usage(df, verbose=True):

@@ -4,7 +4,7 @@ import numpy as np
 import os
 import sys
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/user01',''))
+sys.path.append(cwd.replace('/user01', ''))
 from utils import log_evaluation
 
 
@@ -25,10 +25,11 @@ def train_and_predict(X_train, X_valid, y_train, y_valid, X_test, lgbm_params):
         lgbm_params, lgb_train,
         # モデルの評価用データを渡す
         valid_sets=lgb_eval,
-        # 最大で 1000 ラウンドまで学習する
-        num_boost_round=1000,
-        # 10 ラウンド経過しても性能が向上しないときは学習を打ち切る
-        early_stopping_rounds=10,
+        valid_names=['train','test'],
+        # 最大で 10000 ラウンドまで学習する
+        num_boost_round=10000,
+        # 200 ラウンド経過しても性能が向上しないときは学習を打ち切る
+        early_stopping_rounds=200,
         # ログ
         callbacks=callbacks
     )
