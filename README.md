@@ -2,14 +2,13 @@
 ```
 .
 ├── README.md
-├── configs
-│   └── default.json
 ├── convert_to_feather.py
 ├── data
 │   ├── input
 │   │   ├── *.csv
 │   │   └── *.feather
 │   └── output
+│       └── submit_*.csv
 ├── features
 │   └── *.feather
 ├── logs
@@ -17,6 +16,7 @@
 ├── models
 │   └── *.model
 ├── notebook
+│   └── *.ipynb
 ├── src
 │   └── features_base.py
 ├── user01
