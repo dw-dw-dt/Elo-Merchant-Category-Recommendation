@@ -14,6 +14,7 @@
 ├── logs
 │   └── *.log
 ├── models
+│   ├── *.json
 │   └── *.model
 ├── notebook
 │   └── *.ipynb
