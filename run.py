@@ -4,7 +4,7 @@ import logging
 from sklearn.model_selection import KFold
 import argparse
 import json
-from logs.logger import log_best
+#from logs.logger import log_best
 from models.lgbmClassifier import train_and_predict
 import subprocess
 import os
@@ -12,7 +12,7 @@ import sys
 cwd = os.getcwd()
 sys.path.append(cwd)
 
-from utils import load_datasets, load_target
+from utils import log_best, load_datasets, load_target
 
 
 parser = argparse.ArgumentParser()
