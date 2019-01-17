@@ -10,7 +10,7 @@ import sys
 cwd = os.getcwd()
 sys.path.append(cwd.replace('/user01',''))
 from lgbmClassifier import train_and_predict
-from utils import log_best, load_datasets, load_target
+from utils import log_best, load_datasets, load_target, save2pkl
 
 
 parser = argparse.ArgumentParser()
@@ -61,14 +61,20 @@ for train_index, valid_index in kf.split(X_train_all):
     # スコア
     log_best(model, config['loss'])
 
-## TODO
-## model, とparams をmodelフォルダに保存するべき
-
 # CVスコア
 scores = [
     m.best_score['valid_0'][config['loss']] for m in models
 ]
 score = sum(scores) / len(scores)
+
+# モデルの保存
+for i, model in enumerate(models):
+    save2pkl('../models/lgbm_{0}_{1}.pkl'.format(score, str(i)), model)
+
+# モデルパラメータの保存
+with open('../models/lgbm_{0}_params.json'.format(score), 'w') as f:
+    json.dump(lgbm_params, f, indent=4)
+
 print('===CV scores===')
 print(scores)
 print(score)

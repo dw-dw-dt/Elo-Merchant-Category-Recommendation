@@ -7,10 +7,10 @@ from workalendar.america import Brazil
 import os
 import sys
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/user01',''))
+sys.path.append(cwd.replace('/user01', ''))
 from utils import one_hot_encoder
-sys.path.append(cwd.replace('/user01','/src'))
-from features_base import Feature, get_arguments, generate_features
+sys.path.append(cwd.replace('/user01', '/src'))
+from feature_base import Feature, get_arguments, generate_features
 
 
 # featureの格納場所はfeatures
@@ -20,10 +20,10 @@ Feature.dir = '../features'
 class Train_test(Feature):
     def create_features(self):
         # load csv
-        #train_df = pd.read_csv('../input/train.csv', index_col=['card_id'], nrows=num_rows)
+        # train_df = pd.read_csv('../input/train.csv', index_col=['card_id'], nrows=num_rows)
         train_df = feather.read_dataframe('../data/input/train.feather')
         train_df = train_df.set_index('card_id')
-        #test_df = pd.read_csv('../input/test.csv', index_col=['card_id'], nrows=num_rows)
+        # test_df = pd.read_csv('../input/test.csv', index_col=['card_id'], nrows=num_rows)
         test_df = feather.read_dataframe('../data/input/test.feather')
         test_df = test_df.set_index('card_id')
 
