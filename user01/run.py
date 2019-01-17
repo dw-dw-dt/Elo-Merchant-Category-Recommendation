@@ -86,6 +86,6 @@ for i in range(len(y_preds) - 1):
 sub[target_name] = [1 if y > 1 else 0 for y in y_preds[0]]
 
 sub.to_csv(
-    '../data/output/sub_{0:%Y-%m-%d-%H-%M-%S}_{1}.csv'.format(now, score),
+    '../data/output/submit_{0:%Y-%m-%d-%H-%M-%S}_{1}.csv'.format(now, score),
     index=False
 )
