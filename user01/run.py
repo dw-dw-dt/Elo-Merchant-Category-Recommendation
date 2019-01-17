@@ -2,7 +2,7 @@ import pandas as pd
 import datetime
 import logging
 from sklearn.model_selection import KFold
-import argparse
+#import argparse
 import json
 import subprocess
 import os
@@ -13,10 +13,10 @@ from lgbmClassifier import train_and_predict
 from utils import log_best, load_datasets, load_target, save2pkl
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--config', default='model_params.json')
-options = parser.parse_args()
-config = json.load(open(options.config))
+#parser = argparse.ArgumentParser()
+#parser.add_argument('--config', default='model_params.json')
+#options = parser.parse_args()
+#config = json.load(open(options.config))
 
 
 now = datetime.datetime.now()
@@ -25,11 +25,10 @@ logging.basicConfig(
 )
 logging.debug('../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now))
 
-quit()
-feats = config['features']
-logging.debug(feats)
+#feats = config['features']
+#logging.debug(feats)
 
-target_name = config['target_name']
+#target_name = config['target_name']
 
 
 X_train_all, X_test = load_datasets(feats)
@@ -40,7 +39,16 @@ logging.debug(X_train_all.shape)
 y_preds = []
 models = []
 
-lgbm_params = config['lgbm_params']
+lgbm_params = {
+    "learning_rate": 0.1,
+    "num_leaves": 8,
+    "boosting_type": "gbdt",
+    "colsample_bytree": 0.65,
+    "reg_alpha": 1,
+    "reg_lambda": 1,
+    "objective": "multiclass",
+    "num_class": 2
+}
 
 kf = KFold(n_splits=3, random_state=0)
 for train_index, valid_index in kf.split(X_train_all):
