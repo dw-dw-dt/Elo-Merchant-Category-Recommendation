@@ -3,21 +3,25 @@ import datetime
 import logging
 from sklearn.model_selection import KFold
 #import argparse
+import gc
+import feather
 import json
 import subprocess
 import os
 import sys
+this_folder = '/user01'
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/user01',''))
+sys.path.append(cwd.replace(this_folder,''))
 from lgbmClassifier import train_and_predict
-from utils import log_best, load_datasets, load_target, save2pkl
+from kfold_lgbm import kfold_lightgbm
+from utils import log_best, load_datasets, save2pkl, line_notify, submit #, load_target
 
-
-#parser = argparse.ArgumentParser()
-#parser.add_argument('--config', default='model_params.json')
-#options = parser.parse_args()
-#config = json.load(open(options.config))
-
+# init
+FEATS_EXCLUDED = ['first_active_month', 'target', 'card_id', 'outliers',
+                  'hist_purchase_date_max', 'hist_purchase_date_min', 'hist_card_id_size',
+                  'new_purchase_date_max', 'new_purchase_date_min', 'new_card_id_size',
+                  'Outlier_Likelyhood', 'OOF_PRED', 'outliers_pred', 'month_0']
+NUM_FOLDS = 11
 
 now = datetime.datetime.now()
 logging.basicConfig(
@@ -25,15 +29,22 @@ logging.basicConfig(
 )
 logging.debug('../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now))
 
-#feats = config['features']
-#logging.debug(feats)
+# create features
+create_features = subprocess.run('python create_features.py', shell=True)
+if create_features.returncode != 0:
+    print('ERROR')
+    quit()
 
-#target_name = config['target_name']
+# loading
+path = cwd.replace(this_folder,'/features')
+train_df, test_df = load_datasets(path)
+feats = [f for f in train_df.columns if f not in FEATS_EXCLUDED]
+logging.debug(['train:', train_df.shape, ', test:', test_df.shape, ', len(features):', len(feats)])
+
+# model
+kfold_lightgbm(train_df, test_df, num_folds=NUM_FOLDS, feats_exclude=FEATS_EXCLUDED, stratified=False, debug=False)
 
 
-X_train_all, X_test = load_datasets(feats)
-y_train_all = load_target(target_name)
-logging.debug(X_train_all.shape)
 
 
 y_preds = []
@@ -51,7 +62,7 @@ lgbm_params = {
 }
 
 kf = KFold(n_splits=3, random_state=0)
-for train_index, valid_index in kf.split(X_train_all):
+for n_fold, train_index, valid_index in enumerate(kf.split(train_df[feats]), train_df['outliers']):
     X_train, X_valid = (
         X_train_all.iloc[train_index, :], X_train_all.iloc[valid_index, :]
     )
@@ -77,7 +88,7 @@ score = sum(scores) / len(scores)
 
 # モデルの保存
 for i, model in enumerate(models):
-    save2pkl('../models/lgbm_{0}_{1}.pkl'.format(score, str(i)), model)
+    save2pkl('../models/lgbm_{0}_{1}.pkl'.format(score, i), model)
 
 # モデルパラメータの保存
 with open('../models/lgbm_{0}_params.json'.format(score), 'w') as f:
