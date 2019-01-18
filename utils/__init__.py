@@ -2,6 +2,8 @@ import time
 import pandas as pd
 import numpy as np
 import feather
+import requests
+import os
 from contextlib import contextmanager
 import pickle
 import logging
@@ -44,20 +46,46 @@ def one_hot_encoder(df, nan_as_category=True):
     return df, new_cols
 
 
-def load_datasets(feats):
+def load_datasets(features_path):
     # dfs = [pd.read_feather(f'features/{f}_train.feather') for f in feats]
-    dfs = [feather.read_dataframe(f'features/{f}_train.feather') for f in feats]
-    X_train = pd.concat(dfs, axis=1)
+    train_features = [f for f in os.listdir(features_path) if f[-13:] == 'train.feather']
+    dfs = [feather.read_dataframe(features_path+'/'+f) for f in train_features]
+    train = pd.concat(dfs, axis=1)
     # dfs = [pd.read_feather(f'features/{f}_test.feather') for f in feats]
-    dfs = [feather.read_dataframe(f'features/{f}_test.feather') for f in feats]
-    X_test = pd.concat(dfs, axis=1)
-    return X_train, X_test
+    test_features = [f for f in os.listdir(features_path) if f[-12:] == 'test.feather']
+    dfs = [feather.read_dataframe(features_path+'/'+f) for f in test_features]
+    test = pd.concat(dfs, axis=1)
+    return train, test
 
-
+"""
 def load_target(target_name):
     train = pd.read_csv('./data/input/train.csv')
     y_train = train[target_name]
     return y_train
+"""
+
+def line_notify(message):
+    f = open('../data/input/line_token.txt')
+    token = f.read()
+    f.close
+    line_notify_token = token.replace('\n', '')
+    line_notify_api = 'https://notify-api.line.me/api/notify'
+    payload = {'message': message}
+    headers = {'Authorization': 'Bearer ' + line_notify_token}  # 発行したトークン
+    line_notify = requests.post(line_notify_api, data=payload, headers=headers)
+    print(message)
+
+# API経由でsubmitする機能 https://github.com/KazukiOnodera/Home-Credit-Default-Risk/blob/master/py/utils.py
+def submit(competition_name, file_path, comment='from API'):
+    os.system('kaggle competitions submit -c {} -f {} -m "{}"'.format(competition_name,file_path,comment))
+    time.sleep(60) # tekito~~~~
+    tmp = os.popen('kaggle competitions submissions -c {} -v | head -n 2'.format(competition_name)).read()
+    col, values = tmp.strip().split('\n')
+    message = 'SCORE!!!\n'
+    for i,j in zip(col.split(','), values.split(',')):
+        message += '{}: {}\n'.format(i,j)
+#        print(f'{i}: {j}') # TODO: comment out later?
+    line_notify(message.rstrip())
 
 
 def save2pkl(path, object):
