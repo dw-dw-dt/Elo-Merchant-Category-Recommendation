@@ -12,17 +12,18 @@ import sys
 this_folder = '/user01'
 cwd = os.getcwd()
 sys.path.append(cwd.replace(this_folder,''))
-from lgbmClassifier import train_and_predict
+#from lgbmClassifier import train_and_predict
 from kfold_lgbm import kfold_lightgbm
 from utils import log_best, load_datasets, save2pkl, line_notify, submit #, load_target
 
 # init
+COMPETITION_NAME = 'elo-merchant-category-recommendation'
 FEATS_EXCLUDED = ['first_active_month', 'target', 'card_id', 'outliers',
                   'hist_purchase_date_max', 'hist_purchase_date_min', 'hist_card_id_size',
                   'new_purchase_date_max', 'new_purchase_date_min', 'new_card_id_size',
                   'Outlier_Likelyhood', 'OOF_PRED', 'outliers_pred', 'month_0']
-NUM_FOLDS = 11
 
+# start log
 now = datetime.datetime.now()
 logging.basicConfig(
     filename='../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now), level=logging.DEBUG
@@ -39,11 +40,11 @@ if create_features.returncode != 0:
 path = cwd.replace(this_folder,'/features')
 train_df, test_df = load_datasets(path)
 feats = [f for f in train_df.columns if f not in FEATS_EXCLUDED]
-logging.debug(['train:', train_df.shape, ', test:', test_df.shape, ', len(features):', len(feats)])
 
 # model
+NUM_FOLDS = 11
 kfold_lightgbm(train_df, test_df, num_folds=NUM_FOLDS, feats_exclude=FEATS_EXCLUDED, stratified=False, debug=False)
-
+quit()
 
 
 
