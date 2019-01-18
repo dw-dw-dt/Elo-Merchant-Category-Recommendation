@@ -38,7 +38,7 @@ python convert_to_feather.py
 ```
 python create_features.py
 ```
-実行するのは, 以下のみ.
+実行するのは, 以下のみ(この中でも上記の create_features.py は実行されます).
 ```
 python run.py
 ```
