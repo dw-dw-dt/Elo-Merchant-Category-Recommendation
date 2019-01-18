@@ -29,7 +29,7 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
 
 # LightGBM GBDT with KFold or Stratified KFold
 def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = False, debug=False):
-    print("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
+    logging.debug("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
 
     # Cross validation model
     if stratified:
@@ -42,6 +42,7 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
     sub_preds = np.zeros(test_df.shape[0])
     feature_importance_df = pd.DataFrame()
     feats = [f for f in train_df.columns if f not in feats_exclude]
+    quit()
 
     # k-fold
     for n_fold, train_idx, valid_idx in enumerate(folds.split(train_df[feats], train_df['outliers'])):
