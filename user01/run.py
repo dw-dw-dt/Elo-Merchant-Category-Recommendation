@@ -16,7 +16,10 @@ sys.path.append(cwd.replace(this_folder,''))
 from kfold_lgbm import kfold_lightgbm
 from utils import log_best, load_datasets, save2pkl, line_notify, submit #, load_target
 
-# init
+# config
+create_features = False # create_features.py を再実行する場合は True, そうでない場合は False
+is_debug = True # True だと少数のデータで動かします, False だと全データを使います
+use_GPU = False
 COMPETITION_NAME = 'elo-merchant-category-recommendation'
 FEATS_EXCLUDED = ['first_active_month', 'target', 'card_id', 'outliers',
                   'hist_purchase_date_max', 'hist_purchase_date_min', 'hist_card_id_size',
@@ -31,23 +34,34 @@ logging.basicConfig(
 logging.debug('../logs/log_{0:%Y-%m-%d-%H-%M-%S}.log'.format(now))
 
 # create features
-create_features = subprocess.run('python create_features.py', shell=True)
-if create_features.returncode != 0:
-    print('ERROR')
-    quit()
+if create_features == True:
+    result = subprocess.run('python create_features.py', shell=True)
+    if result.returncode != 0:
+        print('ERROR')
+        quit()
 
 # loading
 path = cwd.replace(this_folder,'/features')
 train_df, test_df = load_datasets(path)
-feats = [f for f in train_df.columns if f not in FEATS_EXCLUDED]
+if is_debug == True:
+    train_df = train_df.iloc[0:10000]
+    test_df = test_df.iloc[0:10000]
+logging.debug("Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
 
 # model
 NUM_FOLDS = 11
-kfold_lightgbm(train_df, test_df, num_folds=NUM_FOLDS, feats_exclude=FEATS_EXCLUDED, stratified=False, debug=False)
+models, model_params, feature_importance_df, test_preds = kfold_lightgbm(train_df,
+                                                                         test_df,
+                                                                         num_folds=NUM_FOLDS,
+                                                                         feats_exclude=FEATS_EXCLUDED,
+                                                                         stratified=False,
+                                                                         use_gpu=use_GPU)
+print('finish')
 quit()
 
 
 
+################
 y_preds = []
 models = []
 
