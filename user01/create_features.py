@@ -11,8 +11,7 @@ cwd = os.getcwd()
 sys.path.append(cwd.replace(this_folder, ''))
 from utils import one_hot_encoder, load_datasets
 sys.path.append(cwd.replace(this_folder, '/src'))
-from feature_base import Feature, get_arguments, generate_features
-
+from feature_base import Feature, generate_features
 
 # featureの格納場所はfeatures
 Feature.dir = '../features'
@@ -214,8 +213,8 @@ class Historical_transactions(Feature):
         hist_df_test = hist_df_test.drop(init_cols, axis=1)
 
         #self.df = hist_df
-        self.train = hist_df_train.reset_index()
-        self.test = hist_df_test.reset_index()
+        self.train = hist_df_train.reset_index(drop=True)
+        self.test = hist_df_test.reset_index(drop=True)
 
 
 class New_merchant_transactions(Feature):
@@ -350,28 +349,9 @@ class New_merchant_transactions(Feature):
         new_merchant_df_train = new_merchant_df_train.drop(init_cols, axis=1)
         new_merchant_df_test = new_merchant_df_test.drop(init_cols, axis=1)
 
-        self.train = new_merchant_df_train.reset_index()
-        self.test = new_merchant_df_test.reset_index()
+        self.train = new_merchant_df_train.reset_index(drop=True)
+        self.test = new_merchant_df_test.reset_index(drop=True)
 
-"""
-def load_all():
-    train_df = feather.read_dataframe('../features/traintest_train.feather')
-    test_df = feather.read_dataframe('../features/traintest_test.feather')
-    df = pd.concat([train_df, test_df], axis=0)
-
-    hist_df_train = feather.read_dataframe('../features/historical_transactions_train.feather')
-    hist_df_test = feather.read_dataframe('../features/historical_transactions_test.feather')
-    hist_df = pd.concat([hist_df_train, hist_df_test], axis=0)
-    #df = pd.merge(df, hist_df, on='card_id', how='outer')
-    df = pd.concat([df, hist_df], axis=1)
-
-    new_merchant_df_train =feather.read_dataframe('../features/new_merchant_transactions_train.feather')
-    new_merchant_df_test =feather.read_dataframe('../features/new_merchant_transactions_test.feather')
-    new_merchant_df = pd.concat([new_merchant_df_train, new_merchant_df_test], axis=0)
-    #df = pd.merge(df, new_merchant_df, on='card_id', how='outer')
-    df = pd.concat([df, new_merchant_df], axis=1)
-    return df
-"""
 
 class Additional_features(Feature):
     def create_features(self):
@@ -444,5 +424,4 @@ class Additional_features(Feature):
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    generate_features(globals(), args.force)
+    generate_features(globals())

@@ -6,11 +6,11 @@ import logging
 import pandas as pd
 import numpy as np
 import os
+import gc
 import sys
 cwd = os.getcwd()
 sys.path.append(cwd.replace('/user01', ''))
-from utils import log_evaluation
-
+from utils import log_evaluation, rmse
 
 # Display/plot feature importance
 def display_importances(feature_importance_df_, outputpath, csv_outputpath):
@@ -28,8 +28,8 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
     plt.savefig(outputpath)
 
 # LightGBM GBDT with KFold or Stratified KFold
-def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = False, debug=False):
-    logging.debug("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
+def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = False, use_gpu = False):
+    logging.debug("Starting LightGBM.")
 
     # Cross validation model
     if stratified:
@@ -38,16 +38,20 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
         folds = KFold(n_splits= num_folds, shuffle=True, random_state=4950)
 
     # Create arrays and dataframes to store results
-    oof_preds = np.zeros(train_df.shape[0])
-    sub_preds = np.zeros(test_df.shape[0])
+    train_preds = np.zeros(train_df.shape[0])
+    test_preds = np.zeros(test_df.shape[0])
     feature_importance_df = pd.DataFrame()
     feats = [f for f in train_df.columns if f not in feats_exclude]
-    quit()
+
+    models = []
+    model_params = {}
 
     # k-fold
-    for n_fold, train_idx, valid_idx in enumerate(folds.split(train_df[feats], train_df['outliers'])):
+    for n_fold, (train_idx, valid_idx) in enumerate(folds.split(train_df[feats], train_df['outliers'])):
         train_x, train_y = train_df[feats].iloc[train_idx], train_df['target'].iloc[train_idx]
         valid_x, valid_y = train_df[feats].iloc[valid_idx], train_df['target'].iloc[valid_idx]
+
+        logging.debug(train_x.columns)
 
         # set data structure
         lgb_train = lgb.Dataset(train_x,
@@ -59,8 +63,8 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
 
         # パラメータは適当です
         params ={
-                'device' : 'gpu',
-#                'gpu_use_dp':True,
+                # 'device' : 'gpu',
+                # 'gpu_use_dp':True,
                 'task': 'train',
                 'boosting': 'goss',
                 'objective': 'regression',
@@ -82,40 +86,57 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
                 'bagging_seed':int(2**n_fold),
                 'drop_seed':int(2**n_fold)
                 }
+        if use_gpu == True:
+            params.update({'device':'gpu'})
 
-        reg = lgb.train(
-                        params,
-                        lgb_train,
-                        valid_sets=[lgb_train, lgb_test],
-                        valid_names=['train', 'test'],
-                        num_boost_round=10000,
-                        early_stopping_rounds= 200,
-                        verbose_eval=100
-                        )
+        model = lgb.train(
+                         params,
+                         lgb_train,
+                         valid_sets=[lgb_train, lgb_test],
+                         valid_names=['train', 'test'],
+                         num_boost_round=10000,
+                         early_stopping_rounds= 200,
+                         verbose_eval=100
+                         )
 
         # save model
-        reg.save_model('../output/lgbm_'+str(n_fold)+'.txt')
+        models.append(model)
+        model_params.update({str(n_fold):params})
+        #model.save_model('../output/lgbm_'+str(n_fold)+'.txt')
 
-        oof_preds[valid_idx] = reg.predict(valid_x, num_iteration=reg.best_iteration)
-        sub_preds += reg.predict(test_df[feats], num_iteration=reg.best_iteration) / folds.n_splits
+        train_preds[valid_idx] = model.predict(valid_x, num_iteration=model.best_iteration)
+        test_preds += model.predict(test_df[feats], num_iteration=model.best_iteration) / folds.n_splits
 
         fold_importance_df = pd.DataFrame()
         fold_importance_df["feature"] = feats
-        fold_importance_df["importance"] = np.log1p(reg.feature_importance(importance_type='gain', iteration=reg.best_iteration))
+        logging.debug(len(feats))
+
+        temp = model.feature_importance(importance_type='gain', iteration=model.best_iteration)
+        print(temp.shape)
+
+        fold_importance_df["importance"] = np.log1p(model.feature_importance(importance_type='gain', iteration=model.best_iteration))
         fold_importance_df["fold"] = n_fold + 1
         feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
-        print('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, oof_preds[valid_idx])))
-        del reg, train_x, train_y, valid_x, valid_y
-        gc.collect()
+        print('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
+        logging.debug('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
+
+    full_rmse = rmse(train_df['target'], train_preds)
+    logging.debug('Full RMSE score {}'.format(full_rmse))
+    # line_notify('Full RMSE score %.6f' % full_rmse)
+
+    display_importances(feature_importance_df,
+                        '../models/lgbm_importances.png',
+                        '../models/feature_importance_lgbm.csv')
+    return models, model_params, feature_importance_df, test_preds
+
+""" 以下はモデルの外側で実装
 
     # Full RMSEスコアの表示&LINE通知
     full_rmse = rmse(train_df['target'], oof_preds)
     line_notify('Full RMSE score %.6f' % full_rmse)
 
     # display importances
-    display_importances(feature_importance_df,
-                        '../output/lgbm_importances.png',
-                        '../output/feature_importance_lgbm.csv')
+    
 
     if not debug:
         # 提出データの予測値を保存
@@ -130,3 +151,4 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
 
         # API経由でsubmit
         submit(submission_file_name, comment='model107 cv: %.6f' % full_rmse)
+"""
