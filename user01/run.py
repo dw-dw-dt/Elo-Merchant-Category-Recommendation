@@ -26,6 +26,7 @@ FEATS_EXCLUDED = ['first_active_month', 'target', 'card_id', 'outliers',
                   'new_purchase_date_max', 'new_purchase_date_min', 'new_card_id_size',
                   'Outlier_Likelyhood', 'OOF_PRED', 'outliers_pred', 'month_0']
 NUM_FOLDS = 11 # is_debug が True だとここの設定によらず 2 に更新されます
+LOSS = 'rmse'
 
 
 # start log
@@ -56,21 +57,37 @@ logging.debug("Train shape: {}, test shape: {}".format(train_df.shape, test_df.s
 # model
 models, model_params, feature_importance_df, test_preds = kfold_lightgbm(train_df,
                                                                          test_df,
+                                                                         model_loss=LOSS,
                                                                          num_folds=NUM_FOLDS,
                                                                          feats_exclude=FEATS_EXCLUDED,
                                                                          stratified=False,
                                                                          use_gpu=use_GPU)
 # CVスコア
 scores = [
-    m.best_score['valid_0'][config['loss']] for m in models
+    m.best_score['valid'][LOSS] for m in models
 ]
 score = sum(scores) / len(scores)
-print(score)
 #display_importances(feature_importance_df,
 #                    '../models/lgbm_importances.png',
 #                    '../models/feature_importance_lgbm.csv')
+
+print('===CV scores===')
+print(scores)
+print(score)
+logging.debug('===CV scores===')
+logging.debug(scores)
+logging.debug(score)
+
 print('finish')
 quit()
+
+
+
+
+
+
+
+
 
 
 
