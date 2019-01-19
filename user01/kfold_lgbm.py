@@ -11,7 +11,7 @@ import sys
 this_folder = '/user01'
 cwd = os.getcwd()
 sys.path.append(cwd.replace(this_folder, ''))
-from utils import log_evaluation, log_best, rmse
+from utils import log_evaluation, log_best
 
 
 # LightGBM GBDT with KFold or Stratified KFold

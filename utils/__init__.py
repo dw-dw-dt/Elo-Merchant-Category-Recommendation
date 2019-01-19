@@ -5,6 +5,7 @@ import feather
 import requests
 import matplotlib.pyplot as plt
 import seaborn as sns
+import re
 import os
 from contextlib import contextmanager
 import pickle
@@ -31,7 +32,6 @@ def log_evaluation(logger, period=1, show_stdv=True, level=logging.DEBUG):
     return _callback
 
 
-# rmse
 def rmse(y_true, y_pred):
     return np.sqrt(mean_squared_error(y_true, y_pred))
 
@@ -65,12 +65,6 @@ def load_datasets(features_path):
     test = pd.concat(dfs, axis=1)
     return train, test
 
-"""
-def load_target(target_name):
-    train = pd.read_csv('./data/input/train.csv')
-    y_train = train[target_name]
-    return y_train
-"""
 
 def line_notify(message):
     f = open('../data/input/line_token.txt')
@@ -150,6 +144,7 @@ def reduce_mem_usage(df, verbose=True):
     print('Decreased by {:.1f}%'.format(100 * mem_diff_pct))
     return df
 
+
 # Display/plot feature importance
 def display_importances(feature_importance_df_, outputpath, csv_outputpath):
     cols = feature_importance_df_[["feature", "importance"]].groupby("feature").mean().sort_values(by="importance", ascending=False)[:40].index
@@ -164,3 +159,23 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
     plt.title('LightGBM Features (avg over folds)')
     plt.tight_layout()
     plt.savefig(outputpath)
+
+
+def make_output_dir(score):
+    path = '../data/output/'
+    folders = []
+    for x in os.listdir(path):  
+        if os.path.isdir(path + x):
+            folders.append(x)
+    if folders == []:
+        folder_name = '/001_score_{}'.format(score)
+    else:
+        max_folder_num = max(int(f[:3]) for f in folders)
+        folder_name = '/{0:0=3}_score_{1}'.format(max_folder_num+1, score)
+    os.mkdir(path + folder_name)
+    return path + folder_name
+
+
+# この部分は上記の各関数の動作確認のために使います
+if __name__ == '__main__':
+    make_output_dir(0.02)
