@@ -3,11 +3,14 @@ import pandas as pd
 import numpy as np
 import feather
 import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
 import os
 from contextlib import contextmanager
 import pickle
 import logging
 from lightgbm.callback import _format_eval_result
+from sklearn.metrics import mean_squared_error
 
 
 def log_best(model, metric):
@@ -26,6 +29,11 @@ def log_evaluation(logger, period=1, show_stdv=True, level=logging.DEBUG):
             logger.log(level, '[{}]\t{}'.format(env.iteration + 1, result))
     _callback.order = 10
     return _callback
+
+
+# rmse
+def rmse(y_true, y_pred):
+    return np.sqrt(mean_squared_error(y_true, y_pred))
 
 
 @contextmanager
@@ -141,3 +149,18 @@ def reduce_mem_usage(df, verbose=True):
     print('Memory usage after optimization is: {:.2f} MB'.format(end_mem))
     print('Decreased by {:.1f}%'.format(100 * mem_diff_pct))
     return df
+
+# Display/plot feature importance
+def display_importances(feature_importance_df_, outputpath, csv_outputpath):
+    cols = feature_importance_df_[["feature", "importance"]].groupby("feature").mean().sort_values(by="importance", ascending=False)[:40].index
+    best_features = feature_importance_df_.loc[feature_importance_df_.feature.isin(cols)]
+
+    # importance下位の確認用に追加しました
+    _feature_importance_df_=feature_importance_df_.groupby('feature').sum()
+    _feature_importance_df_.to_csv(csv_outputpath)
+
+    plt.figure(figsize=(8, 10))
+    sns.barplot(x="importance", y="feature", data=best_features.sort_values(by="importance", ascending=False))
+    plt.title('LightGBM Features (avg over folds)')
+    plt.tight_layout()
+    plt.savefig(outputpath)

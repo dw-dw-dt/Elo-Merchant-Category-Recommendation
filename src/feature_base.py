@@ -1,4 +1,3 @@
-import argparse
 import inspect
 import feather
 import pandas as pd
@@ -8,14 +7,6 @@ from pathlib import Path
 from utils import timer
 
 
-def get_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--force', '-f', action='store_true', help='Overwrite existing files'
-    )
-    return parser.parse_args()
-
-
 def get_features(namespace):  # 特徴量クラスのみを抽出する関数
     for k, v in namespace.items():
         if inspect.isclass(v) and issubclass(v, Feature) \
@@ -23,9 +14,9 @@ def get_features(namespace):  # 特徴量クラスのみを抽出する関数
             yield v()
 
 
-def generate_features(namespace, overwrite):
+def generate_features(namespace):
     for f in get_features(namespace):
-        if f.train_path.exists() and f.test_path.exists() and not overwrite:
+        if f.train_path.exists() and f.test_path.exists():
         # if f.df_path.exists() and not overwrite:
             print(f.name, 'was skipped')
         else:

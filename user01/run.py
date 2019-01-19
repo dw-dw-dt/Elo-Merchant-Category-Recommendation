@@ -14,17 +14,19 @@ cwd = os.getcwd()
 sys.path.append(cwd.replace(this_folder,''))
 #from lgbmClassifier import train_and_predict
 from kfold_lgbm import kfold_lightgbm
-from utils import log_best, load_datasets, save2pkl, line_notify, submit #, load_target
+from utils import log_best, load_datasets, display_importances, save2pkl, line_notify, submit #, load_target
 
 # config
 create_features = False # create_features.py を再実行する場合は True, そうでない場合は False
-is_debug = True # True だと少数のデータで動かします, False だと全データを使います
+is_debug = True # True だと少数のデータで動かします, False だと全データを使います. また NUM_FOLDS = 2 になります
 use_GPU = False
 COMPETITION_NAME = 'elo-merchant-category-recommendation'
 FEATS_EXCLUDED = ['first_active_month', 'target', 'card_id', 'outliers',
                   'hist_purchase_date_max', 'hist_purchase_date_min', 'hist_card_id_size',
                   'new_purchase_date_max', 'new_purchase_date_min', 'new_card_id_size',
                   'Outlier_Likelyhood', 'OOF_PRED', 'outliers_pred', 'month_0']
+NUM_FOLDS = 11 # is_debug が True だとここの設定によらず 2 に更新されます
+
 
 # start log
 now = datetime.datetime.now()
@@ -43,19 +45,30 @@ if create_features == True:
 # loading
 path = cwd.replace(this_folder,'/features')
 train_df, test_df = load_datasets(path)
+
+# debug or not
 if is_debug == True:
     train_df = train_df.iloc[0:10000]
     test_df = test_df.iloc[0:10000]
+    NUM_FOLDS = 2
 logging.debug("Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
 
 # model
-NUM_FOLDS = 11
 models, model_params, feature_importance_df, test_preds = kfold_lightgbm(train_df,
                                                                          test_df,
                                                                          num_folds=NUM_FOLDS,
                                                                          feats_exclude=FEATS_EXCLUDED,
                                                                          stratified=False,
                                                                          use_gpu=use_GPU)
+# CVスコア
+scores = [
+    m.best_score['valid_0'][config['loss']] for m in models
+]
+score = sum(scores) / len(scores)
+print(score)
+#display_importances(feature_importance_df,
+#                    '../models/lgbm_importances.png',
+#                    '../models/feature_importance_lgbm.csv')
 print('finish')
 quit()
 
