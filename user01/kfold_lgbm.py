@@ -12,20 +12,6 @@ cwd = os.getcwd()
 sys.path.append(cwd.replace('/user01', ''))
 from utils import log_evaluation, rmse
 
-# Display/plot feature importance
-def display_importances(feature_importance_df_, outputpath, csv_outputpath):
-    cols = feature_importance_df_[["feature", "importance"]].groupby("feature").mean().sort_values(by="importance", ascending=False)[:40].index
-    best_features = feature_importance_df_.loc[feature_importance_df_.feature.isin(cols)]
-
-    # importance下位の確認用に追加しました
-    _feature_importance_df_=feature_importance_df_.groupby('feature').sum()
-    _feature_importance_df_.to_csv(csv_outputpath)
-
-    plt.figure(figsize=(8, 10))
-    sns.barplot(x="importance", y="feature", data=best_features.sort_values(by="importance", ascending=False))
-    plt.title('LightGBM Features (avg over folds)')
-    plt.tight_layout()
-    plt.savefig(outputpath)
 
 # LightGBM GBDT with KFold or Stratified KFold
 def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = False, use_gpu = False):
@@ -50,8 +36,6 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
     for n_fold, (train_idx, valid_idx) in enumerate(folds.split(train_df[feats], train_df['outliers'])):
         train_x, train_y = train_df[feats].iloc[train_idx], train_df['target'].iloc[train_idx]
         valid_x, valid_y = train_df[feats].iloc[valid_idx], train_df['target'].iloc[valid_idx]
-
-        logging.debug(train_x.columns)
 
         # set data structure
         lgb_train = lgb.Dataset(train_x,
@@ -102,18 +86,13 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
         # save model
         models.append(model)
         model_params.update({str(n_fold):params})
-        #model.save_model('../output/lgbm_'+str(n_fold)+'.txt')
+        # model.save_model('../output/lgbm_'+str(n_fold)+'.txt')
 
         train_preds[valid_idx] = model.predict(valid_x, num_iteration=model.best_iteration)
         test_preds += model.predict(test_df[feats], num_iteration=model.best_iteration) / folds.n_splits
 
         fold_importance_df = pd.DataFrame()
         fold_importance_df["feature"] = feats
-        logging.debug(len(feats))
-
-        temp = model.feature_importance(importance_type='gain', iteration=model.best_iteration)
-        print(temp.shape)
-
         fold_importance_df["importance"] = np.log1p(model.feature_importance(importance_type='gain', iteration=model.best_iteration))
         fold_importance_df["fold"] = n_fold + 1
         feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
@@ -124,9 +103,9 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
     logging.debug('Full RMSE score {}'.format(full_rmse))
     # line_notify('Full RMSE score %.6f' % full_rmse)
 
-    display_importances(feature_importance_df,
-                        '../models/lgbm_importances.png',
-                        '../models/feature_importance_lgbm.csv')
+    # display_importances(feature_importance_df,
+    #                    '../models/lgbm_importances.png',
+    #                    '../models/feature_importance_lgbm.csv')
     return models, model_params, feature_importance_df, test_preds
 
 """ 以下はモデルの外側で実装
