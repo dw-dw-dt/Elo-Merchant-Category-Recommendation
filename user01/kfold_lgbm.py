@@ -8,13 +8,14 @@ import numpy as np
 import os
 import gc
 import sys
+this_folder = '/user01'
 cwd = os.getcwd()
-sys.path.append(cwd.replace('/user01', ''))
-from utils import log_evaluation, rmse
+sys.path.append(cwd.replace(this_folder, ''))
+from utils import log_evaluation, log_best, rmse
 
 
 # LightGBM GBDT with KFold or Stratified KFold
-def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = False, use_gpu = False):
+def kfold_lightgbm(train_df, test_df, model_loss, num_folds, feats_exclude, stratified = False, use_gpu = False):
     logging.debug("Starting LightGBM.")
 
     # Cross validation model
@@ -34,6 +35,7 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
 
     # k-fold
     for n_fold, (train_idx, valid_idx) in enumerate(folds.split(train_df[feats], train_df['outliers'])):
+        print('Fold_{}'.format(n_fold))
         train_x, train_y = train_df[feats].iloc[train_idx], train_df['target'].iloc[train_idx]
         valid_x, valid_y = train_df[feats].iloc[valid_idx], train_df['target'].iloc[valid_idx]
 
@@ -41,7 +43,7 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
         lgb_train = lgb.Dataset(train_x,
                                 label=train_y,
                                 free_raw_data=False)
-        lgb_test = lgb.Dataset(valid_x,
+        lgb_valid = lgb.Dataset(valid_x,
                                label=valid_y,
                                free_raw_data=False)
 
@@ -52,7 +54,7 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
                 'task': 'train',
                 'boosting': 'goss',
                 'objective': 'regression',
-                'metric': 'rmse',
+                'metric': model_loss,
                 'learning_rate': 0.01,
                 'subsample': 0.9855232997390695,
                 'max_depth': 7,
@@ -76,8 +78,8 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
         model = lgb.train(
                          params,
                          lgb_train,
-                         valid_sets=[lgb_train, lgb_test],
-                         valid_names=['train', 'test'],
+                         valid_sets=[lgb_train, lgb_valid],
+                         valid_names=['train', 'valid'],
                          num_boost_round=10000,
                          early_stopping_rounds= 200,
                          verbose_eval=100
@@ -96,11 +98,15 @@ def kfold_lightgbm(train_df, test_df, num_folds, feats_exclude, stratified = Fal
         fold_importance_df["importance"] = np.log1p(model.feature_importance(importance_type='gain', iteration=model.best_iteration))
         fold_importance_df["fold"] = n_fold + 1
         feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
-        print('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
-        logging.debug('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
+        logging.debug('Fold_{}_best'.format(n_fold))
+        log_best(model, model_loss)
+        #print('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
+        #logging.debug('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, train_preds[valid_idx])))
 
-    full_rmse = rmse(train_df['target'], train_preds)
-    logging.debug('Full RMSE score {}'.format(full_rmse))
+    #full_rmse = rmse(train_df['target'], train_preds)
+    #logging.debug('Full RMSE score {}'.format(full_rmse))
+
+
     # line_notify('Full RMSE score %.6f' % full_rmse)
 
     # display_importances(feature_importance_df,
